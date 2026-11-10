@@ -191,7 +191,7 @@ if "brief" in st.session_state:
         # Style selection
         style = st.selectbox("Style", STYLE_PRESETS, index=STYLE_PRESETS.index(brief.style_preset))
         
-        # Aspect Ratio / Export Format Selection (Added under Style)
+        # Aspect Ratio / Format selection
         aspect_ratio = st.selectbox(
             "Aspect Ratio / Format",
             options=[
@@ -221,62 +221,15 @@ if "brief" in st.session_state:
                 st.session_state["error"] = str(exc)
                 return
             
-            # 1. 오버레이 적용 (bytes 반환)
+            # 1. Title Overlay 적용 (결과물: raw bytes 데이터)
             overlay_bytes = add_title_overlay(result.png, title, artist)
             
-            # 2. bytes를 PIL Image 객체로 변환 (수정된 핵심 부분)
-            pil_image = Image.open(io.BytesIO(overlay_bytes))
+            # 2. bytes 데이터를 PIL Image 객체로 변환
+            pil_img = Image.open(io.BytesIO(overlay_bytes))
             
-            # 3. 비율 및 포맷 변환 수행
+            # 3. PIL Image 객체를 export_poster로 전달하여 리사이즈 및 포맷 변경
             export_key = ratio_map[aspect_ratio]
-            file_bytes, mime, ext = export_poster(pil_image, export_key)
-
-            st.session_state["poster"] = {
-                "bytes": file_bytes,
-                "mime": mime,
-                "ext": ext,
-                "engine": result.engine, 
-                "model": result.model, 
-                "fell_back": fell_back, 
-                "note": note,
-            }
-            try:
-                result, fell_back, note = generate_with_fallback(engine, req)
-            except EngineError as exc:
-                st.session_state["error"] = str(exc)
-                return
-            
-            # Apply title overlay (returns raw bytes)
-            raw_overlay_bytes = add_title_overlay(result.png, title, artist)
-            
-            # Convert bytes to PIL Image object before calling export_poster
-            final_pil_img = Image.open(io.BytesIO(raw_overlay_bytes))
-            
-            # Process aspect ratio / format selection
-            export_key = ratio_map[aspect_ratio]
-            file_bytes, mime, ext = export_poster(final_pil_img, export_key)
-
-            st.session_state["poster"] = {
-                "bytes": file_bytes,
-                "mime": mime,
-                "ext": ext,
-                "engine": result.engine, 
-                "model": result.model, 
-                "fell_back": fell_back, 
-                "note": note,
-            }
-            try:
-                result, fell_back, note = generate_with_fallback(engine, req)
-            except EngineError as exc:
-                st.session_state["error"] = str(exc)
-                return
-            
-            # Apply title overlay
-            final_img = add_title_overlay(result.png, title, artist)
-            
-            # Process aspect ratio / format selection
-            export_key = ratio_map[aspect_ratio]
-            file_bytes, mime, ext = export_poster(final_img, export_key)
+            file_bytes, mime, ext = export_poster(pil_img, export_key)
 
             st.session_state["poster"] = {
                 "bytes": file_bytes,
